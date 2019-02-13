@@ -105,10 +105,16 @@ class JqDialogue {
         let jq = child_process.spawn(FILEPATH, [statement]);
         jq.stdin.write(JSON.stringify(jsonObj));
         jq.stdin.end();
+        let output = "";
         jq.stdout.on('data', data => {
-            let jqOutput = vscode.window.createOutputChannel(OUTPUT_NAME);
-            jqOutput.append(data.toString());
-            jqOutput.show();
+            output += data.toString();
+        });
+        jq.on('close', code => {
+            if (code == 0) {
+                vscode.workspace.openTextDocument({ content: output, language: 'json' }).then(
+                    doc => vscode.window.showTextDocument(doc),
+                    error => this.showError(error.toString()));
+            }
         });
         jq.stderr.on('data', error => {
             this.showError(error.toString());
@@ -116,9 +122,7 @@ class JqDialogue {
     }
 
     private showError(message: string) {
-        let errorOutput = vscode.window.createOutputChannel(OUTPUT_NAME);
-        errorOutput.append(message);
-        errorOutput.show();
+        vscode.window.showErrorMessage(message);
     }
 
 }
